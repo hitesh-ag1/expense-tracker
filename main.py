@@ -1,5 +1,6 @@
 from email.policy import HTTP
 from sqlalchemy.sql.expression import null, true
+from sqlalchemy.sql.sqltypes import Boolean
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 import datetime as dt
@@ -149,9 +150,9 @@ async def create_transaction_view(transaction: Transaction, db: Session = Depend
     db_transaction = create_transaction(db, transaction)
     return db_transaction
 
-@app.get('/add_past_transactions_to_db/' ,response_model = List[Transaction])
+@app.get('/add_past_transactions_to_db/' ,response_model = Boolean)
 def get_past_account_trans_from_email_view(date: str, folder: str , db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
-    result = q.enqueue(get_past_account_trans, credentials.username, credentials.password, date, folder)
+    result = q.enqueue(get_past_account_trans, args = (credentials.username, credentials.password, date, folder), timeout = 600)
     return True
 
 @app.get('/all_transactions/', response_model = List[Transaction])
