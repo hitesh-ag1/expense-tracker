@@ -86,7 +86,7 @@ class AccountDetails(BaseModel):
     class Config:
         orm_mode=True
 
-def get_past_account_trans(email: str, psswd: str, date: str, folder: str, db: Session = Depends(get_db)):
+def get_past_account_trans(db: Session, email: str, psswd: str, date: str, folder: str):
     data = extractData.dataExtraction(email, psswd)
     data.extract_emails(date, folder)
     # data.extract_emails('01-Jun-2021', 'StudBud')
@@ -152,7 +152,7 @@ async def create_transaction_view(transaction: Transaction, db: Session = Depend
 
 @app.get('/add_past_transactions_to_db/')
 def get_past_account_trans_from_email_view(date: str, folder: str , db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
-    result = q.enqueue(get_past_account_trans, args = (credentials.username, credentials.password, date, folder), job_timeout = '30m')
+    result = q.enqueue(get_past_account_trans, args = (db, credentials.username, credentials.password, date, folder), job_timeout = '30m')
     return True
 
 @app.get('/all_transactions/', response_model = List[Transaction])
