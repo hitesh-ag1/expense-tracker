@@ -152,7 +152,7 @@ async def create_transaction_view(transaction: Transaction, db: Session = Depend
 
 @app.get('/add_past_transactions_to_db/')
 def get_past_account_trans_from_email_view(date: str, folder: str , db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
-    result = q.enqueue(get_past_account_trans, args = (credentials.username, credentials.password, date, folder), timeout = 600)
+    result = q.enqueue(get_past_account_trans, args = (credentials.username, credentials.password, date, folder), job_timeout = '30m')
     return True
 
 @app.get('/all_transactions/', response_model = List[Transaction])
