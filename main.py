@@ -18,6 +18,8 @@ from labelData import assign_labels, labelFriends
 from matplotlib import pyplot as plt
 import os
 from fastapi.encoders import jsonable_encoder
+from rq import Queue
+from worker import conn
 from todayFuncs import transToday, transTodaySummarybyCat, transTodaySummarybyType
 from dotenv import load_dotenv
 load_dotenv()
@@ -25,6 +27,8 @@ load_dotenv()
 app = FastAPI()
 
 security=HTTPBasic()
+
+q = Queue(connection=conn)
 
 # POSTGRES_USER = os.getenv("POSTGRES_USER")
 # POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
@@ -81,7 +85,6 @@ class AccountDetails(BaseModel):
     class Config:
         orm_mode=True
 
-
 def get_past_account_trans(db: Session, email: str, psswd: str, date: str, folder: str):
     data = extractData.dataExtraction(email, psswd)
     data.extract_emails(date, folder)
@@ -97,8 +100,8 @@ def get_past_account_trans(db: Session, email: str, psswd: str, date: str, folde
     temp2 = temp2.to_dict('records')
     for trans in temp2:
         db_trans = create_transaction(db, Transaction(**trans))     
-    return db.query(DBTransaction).all()
-
+    # return db.query(DBTransaction).all()
+    return
 
 def get_all_transactions(db: Session):
     return db.query(DBTransaction).all()
@@ -148,7 +151,8 @@ async def create_transaction_view(transaction: Transaction, db: Session = Depend
 
 @app.get('/add_past_transactions_to_db/' ,response_model = List[Transaction])
 def get_past_account_trans_from_email_view(date: str, folder: str , db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
-    return get_past_account_trans(db, credentials.username, credentials.password, date, folder)
+    result = q.enqueue(get_past_account_trans,db, credentials.username, credentials.password, date, folder)
+    return True
 
 @app.get('/all_transactions/', response_model = List[Transaction])
 def get_all_transactions_view(db: Session = Depends(get_db)):
