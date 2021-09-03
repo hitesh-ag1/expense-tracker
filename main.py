@@ -50,7 +50,7 @@ def get_db():
 
 class DBTransaction(Base):
     __tablename__ = 'transaction'
-    date = Column(DateTime)
+    date = Column(DateTime, primary_key=True)
     subject = Column(String)
     msg = Column(String)
     amt = Column(Float)
