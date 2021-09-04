@@ -1,7 +1,7 @@
 from email.policy import HTTP
 from sqlalchemy.sql.expression import null, true
 from sqlalchemy.sql.sqltypes import Boolean
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, BackgroundTasks
 from pydantic import BaseModel
 import datetime as dt
 from datetime import datetime, date, timedelta
@@ -19,8 +19,8 @@ from labelData import assign_labels, labelFriends
 from matplotlib import pyplot as plt
 import os
 from fastapi.encoders import jsonable_encoder
-from rq import Queue
-from worker import conn
+# from rq import Queue
+# from worker import conn
 from todayFuncs import transToday, transTodaySummarybyCat, transTodaySummarybyType
 from dotenv import load_dotenv
 load_dotenv()
@@ -29,7 +29,7 @@ app = FastAPI()
 
 security=HTTPBasic()
 
-q = Queue(connection=conn)
+# q = Queue(connection=conn)
 
 # POSTGRES_USER = os.getenv("POSTGRES_USER")
 # POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
@@ -151,9 +151,10 @@ async def create_transaction_view(transaction: Transaction, db: Session = Depend
     return db_transaction
 
 @app.get('/add_past_transactions_to_db/')
-def get_past_account_trans_from_email_view(date: str, folder: str , db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
-    result = q.enqueue(get_past_account_trans, args = (db, credentials.username, credentials.password, date, folder), job_timeout = '30m')
-    return True
+def get_past_account_trans_from_email_view(date: str, folder: str , background_tasks: BackgroundTasks, db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
+    background_tasks.add_task(get_past_account_trans, db, credentials.username, credentials.password, date, folder)
+    # result = q.enqueue(get_past_account_trans, args = (db, credentials.username, credentials.password, date, folder), job_timeout = '30m')
+    return "Extraction Started"
 
 @app.get('/all_transactions/', response_model = List[Transaction])
 def get_all_transactions_view(db: Session = Depends(get_db)):
