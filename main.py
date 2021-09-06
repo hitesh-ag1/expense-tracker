@@ -5,7 +5,7 @@ from fastapi import FastAPI, Depends, BackgroundTasks
 from pydantic import BaseModel
 import datetime as dt
 from datetime import datetime, date, timedelta
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from typing import Optional, List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
@@ -104,6 +104,9 @@ def get_past_account_trans(db: Session, email: str, psswd: str, date: str, folde
     # return db.query(DBTransaction).all()
     return
 
+def get_latest_transaction(db: Session):
+     return (db.query(DBTransaction.date).order_by(desc('date')).first())['date']
+
 def get_all_transactions(db: Session):
     return db.query(DBTransaction).all()
 
@@ -155,6 +158,11 @@ def get_past_account_trans_from_email_view(date: str, folder: str , background_t
     background_tasks.add_task(get_past_account_trans, db, credentials.username, credentials.password, date, folder)
     # result = q.enqueue(get_past_account_trans, args = (db, credentials.username, credentials.password, date, folder), job_timeout = '30m')
     return "Extraction Started"
+
+@app.get('/update_transactions_in_db/',response_model = List[Transaction])
+def get_updated_past_transactions(folder: str ,db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
+    date = (get_latest_transaction(db)).strftime('%d-%b-%Y')
+    return get_past_account_trans(db, credentials.username, credentials.password, date, folder)
 
 @app.get('/all_transactions/', response_model = List[Transaction])
 def get_all_transactions_view(db: Session = Depends(get_db)):
