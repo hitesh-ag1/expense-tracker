@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import datetime as dt
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, desc
+from sqlalchemy.exc import IntegrityError
 from typing import Optional, List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
@@ -124,7 +125,11 @@ def get_transactions_today_df(db: Session):
 def create_transaction(db: Session, transaction: Transaction):
     db_trans = DBTransaction(**transaction.dict())
     db.add(db_trans)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+
     db.refresh(db_trans)
     return db_trans
 
@@ -159,10 +164,11 @@ def get_past_account_trans_from_email_view(date: str, folder: str , background_t
     # result = q.enqueue(get_past_account_trans, args = (db, credentials.username, credentials.password, date, folder), job_timeout = '30m')
     return "Extraction Started"
 
-@app.get('/update_transactions_in_db/',response_model = List[Transaction])
-def get_updated_past_transactions(folder: str ,db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
+@app.get('/update_transactions_in_db/')
+def get_updated_past_transactions(folder: str, background_tasks: BackgroundTasks ,db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
     date = (get_latest_transaction(db)).strftime('%d-%b-%Y')
-    return get_past_account_trans(db, credentials.username, credentials.password, date, folder)
+    background_tasks.add_task(get_past_account_trans, db, credentials.username, credentials.password, date, folder)
+    return "Updation started"
 
 @app.get('/all_transactions/', response_model = List[Transaction])
 def get_all_transactions_view(db: Session = Depends(get_db)):
