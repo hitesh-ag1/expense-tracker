@@ -127,11 +127,11 @@ def create_transaction(db: Session, transaction: Transaction):
     db.add(db_trans)
     try:
         db.commit()
+        db.refresh(db_trans)
     except IntegrityError:
         db.rollback()
 
-    db.refresh(db_trans)
-    return db_trans
+    return
 
 def delete_transaction(db: Session, trans_id: int):
     db.query(DBTransaction).where(DBTransaction.id == trans_id).delete()
