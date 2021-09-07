@@ -199,8 +199,8 @@ def get_transactions_with_friends(days: int, db: Session=Depends(get_db)):
     trans_today = get_transactions_df(db, days=days)
     return((trans_today[trans_today.category == 'Friends'][['amt', 'date', 'payee', 'type', 'category']]).to_dict("records"))
 
-@app.put('/update_category_friends_today/')
-def put_transactions_with_friends_today(days: int, cat: List[str], db: Session=Depends(get_db)):
+@app.put('/update_category_friends/')
+def put_transactions_with_friends(days: int, cat: List[str], db: Session=Depends(get_db)):
     # inp_date = str((date.today() - timedelta(6)).isoformat())
     trans_today = get_transactions_df(db, days=days)
     cat_today = trans_today.loc[trans_today.category == 'Friends', 'category']
