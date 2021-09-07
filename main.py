@@ -118,6 +118,8 @@ def get_transactions_df(db: Session, days=1):
     inp_date = str(date.today() - timedelta(days))
     trans_today = jsonable_encoder(get_transactions_by_date(db, inp_date, inp_date))
     trans_today = pd.DataFrame(trans_today)
+    if(len(trans_today) == 0):
+        return trans_today
     trans_today.date = pd.to_datetime(trans_today.date)
     trans_today.index = trans_today.date
     return trans_today

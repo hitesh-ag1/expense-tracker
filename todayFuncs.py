@@ -7,6 +7,8 @@ def todayFilter(data):
     return data
 
 def transToday(data):
+    if (len(data) == None):
+        return (data.to_dict())
     trans = (data)[['amt', 'payee', 'type']]
     trans.loc[trans.type == 'Payment', 'amt'] = np.negative(trans.loc[trans.type == 'Payment', 'amt']).values
     trans = trans.groupby('payee',).amt.sum()
@@ -14,11 +16,15 @@ def transToday(data):
     return trans
 
 def transTodaySummarybyType(data):
+    if (len(data) == None):
+        return (data.to_dict())
     da = (data)[['amt', 'type']]
     da = ((da.groupby([pd.Grouper(freq='D'), 'type']).amt.sum()).droplevel('date')).to_dict()
     return da
 
 def transTodaySummarybyCat(data):
+    if (len(data) == None):
+        return (data.to_dict())
     da = (data)[['amt', 'category', 'type']]
     da = ((da.groupby([pd.Grouper(freq='D'), 'category', 'type']).amt.sum()).droplevel('date'))
     da.loc[da.index.get_level_values('type') == 'Payment'] = np.negative(da.loc[da.index.get_level_values('type') == 'Payment'])
