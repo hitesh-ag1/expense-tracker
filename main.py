@@ -114,8 +114,8 @@ def get_all_transactions(db: Session):
 def get_transactions_by_date(db: Session, start_date: dt.date, end_date: dt.date):
     return db.query(DBTransaction).filter(func.date(DBTransaction.date) >= start_date ).filter(func.date(DBTransaction.date) <= end_date).all()
 
-def get_transactions_today_df(db: Session):
-    inp_date = str(date.today() - timedelta(1))
+def get_transactions_df(db: Session, days=1):
+    inp_date = str(date.today() - timedelta(days))
     trans_today = jsonable_encoder(get_transactions_by_date(db, inp_date, inp_date))
     trans_today = pd.DataFrame(trans_today)
     trans_today.date = pd.to_datetime(trans_today.date)
@@ -178,31 +178,31 @@ def get_all_transactions_view(db: Session = Depends(get_db)):
 def get_transaction_by_date_view(start_date: dt.date, end_date:dt.date , db: Session=Depends(get_db)):
     return get_transactions_by_date(db, start_date, end_date)
 
-@app.get('/transactions_today/')
-def get_transactions_today(db: Session=Depends(get_db)):
-    df = get_transactions_today_df(db)
+@app.get('/transactions/')
+def get_transactions(days: int, db: Session=Depends(get_db)):
+    df = get_transactions_df(db, days=days)
     return transToday(df)
 
-@app.get('/transactions_today_inflow_outflow/')
-def get_transactions_today_in_out(db: Session=Depends(get_db)):
-    df = get_transactions_today_df(db)
+@app.get('/transactions_inflow_outflow/')
+def get_transactions_cash_flow(days: int, db: Session=Depends(get_db)):
+    df = get_transactions_df(db, days=days)
     return transTodaySummarybyType(df)
 
-@app.get('/transactions_today_cat_summary/')
-def get_transactions_today_cat_summary(db: Session=Depends(get_db)):
-    df = get_transactions_today_df(db)
+@app.get('/transactions_cat_summary/')
+def get_transactions_cat_summary(days: int, db: Session=Depends(get_db)):
+    df = get_transactions_df(db, days=days)
     return transTodaySummarybyCat(df)
 
-@app.get('/friends_today/')
-def get_transactions_with_friends_today(db: Session=Depends(get_db)):
+@app.get('/friends/')
+def get_transactions_with_friends(days: int, db: Session=Depends(get_db)):
     # inp_date = str((date.today() - timedelta(6)).isoformat())
-    trans_today = get_transactions_today_df(db)
+    trans_today = get_transactions_df(db, days=days)
     return((trans_today[trans_today.category == 'Friends'][['amt', 'date', 'payee', 'type', 'category']]).to_dict("records"))
 
 @app.put('/update_category_friends_today/')
-def put_transactions_with_friends_today(cat: List[str], db: Session=Depends(get_db)):
+def put_transactions_with_friends_today(days: int, cat: List[str], db: Session=Depends(get_db)):
     # inp_date = str((date.today() - timedelta(6)).isoformat())
-    trans_today = get_transactions_today_df(db)
+    trans_today = get_transactions_df(db, days=days)
     cat_today = trans_today.loc[trans_today.category == 'Friends', 'category']
     trans_today.loc[trans_today.category == 'Friends', 'category'] = ([i+ ' - ' +j for i, j in zip(cat_today, cat)])
     trans_today = trans_today[['date', 'category']]
