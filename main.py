@@ -153,6 +153,13 @@ def update_db_category(db: Session, transactions: dict):
     db.commit()
     return (True)
 
+def update_db_category_single(db: Session, date: datetime, cat: str):
+    db.query(DBTransaction).filter(
+        DBTransaction.date == date
+    ).update({'category': (cat)})
+    db.commit()
+    return True
+
 @app.post('/transaction/', response_model = Transaction)
 async def create_transaction_view(transaction: Transaction, db: Session = Depends(get_db)):
     db_transaction = create_transaction(db, transaction)
@@ -211,6 +218,9 @@ def put_transactions_with_friends(days: int, cat: List[str], db: Session=Depends
     trans_today = (trans_today.to_dict()['category'])
     return update_db_category(db, trans_today)
     
+@app.put('/update_category_friends_single/')
+def put_transactions_with_friends(day: datetime, cat: str, db: Session=Depends(get_db)):
+    return update_db_category_single(db, day, cat)
 
 @app.delete('/transaction/{trans_id}')
 def delete_transaction_view(trans_id: int, db: Session = Depends(get_db)):
