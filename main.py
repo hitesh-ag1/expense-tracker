@@ -206,6 +206,8 @@ def get_transactions_cat_summary(days: int, db: Session=Depends(get_db)):
 def get_transactions_with_friends(days: int, db: Session=Depends(get_db)):
     # inp_date = str((date.today() - timedelta(6)).isoformat())
     trans_today = get_transactions_df(db, days=days)
+    if (len(trans_today) == 0):
+        return ([])
     return((trans_today[trans_today.category == 'Friends'][['amt', 'date', 'payee', 'type', 'category']]).to_dict("records"))
 
 @app.put('/update_category_friends/')
