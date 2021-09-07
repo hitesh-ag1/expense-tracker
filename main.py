@@ -114,9 +114,35 @@ def get_all_transactions(db: Session):
 def get_transactions_by_date(db: Session, start_date: dt.date, end_date: dt.date):
     return db.query(DBTransaction).filter(func.date(DBTransaction.date) >= start_date ).filter(func.date(DBTransaction.date) <= end_date).all()
 
-def get_transactions_df(db: Session, days=1):
-    inp_date = str(date.today() - timedelta(days))
-    trans_today = jsonable_encoder(get_transactions_by_date(db, inp_date, inp_date))
+def get_transactions_df(db: Session, days=1, type='day'):
+    if (type=='day'):
+        inp_date = str(date.today() - timedelta(days))
+        trans_today = jsonable_encoder(get_transactions_by_date(db, inp_date, inp_date))
+    elif (type=='week'):
+        start_date = str(date.today() - timedelta(7))
+        end_date = str(date.today())
+        trans_today = jsonable_encoder(get_transactions_by_date(db, start_date, end_date))
+    elif(type=='month'):
+        start_date = str(date(date.today().year, date.today().month, 1))
+        end_date = str(date.today())
+        trans_today = jsonable_encoder(get_transactions_by_date(db, start_date, end_date))
+        pass
+    elif(type=='last_month'):
+        year = date.today().year
+        month = date.today().month
+        if (month == 1):
+            month = 12
+            year -= 1
+        else:
+            month -= 1
+        if (month!=12):
+            day = (date(year, month+1, 1) - timedelta(days=1)).day
+        else:
+            day = (date(year+1, 1, 1) - timedelta(days=1)).day
+        start_date = str(date(year, month, 1))
+        end_date = str(date(year, month, day))
+        trans_today = jsonable_encoder(get_transactions_by_date(db, start_date, end_date))
+
     trans_today = pd.DataFrame(trans_today)
     if(len(trans_today) == 0):
         return trans_today
@@ -188,32 +214,32 @@ def get_transaction_by_date_view(start_date: dt.date, end_date:dt.date , db: Ses
     return get_transactions_by_date(db, start_date, end_date)
 
 @app.get('/transactions/')
-def get_transactions(days: int, db: Session=Depends(get_db)):
-    df = get_transactions_df(db, days=days)
+def get_transactions(days: int, type:str, db: Session=Depends(get_db)):
+    df = get_transactions_df(db, days=days, type=type)
     return transToday(df)
 
 @app.get('/transactions_inflow_outflow/')
-def get_transactions_cash_flow(days: int, db: Session=Depends(get_db)):
-    df = get_transactions_df(db, days=days)
+def get_transactions_cash_flow(days: int, type:str, db: Session=Depends(get_db)):
+    df = get_transactions_df(db, days=days, type=type)
     return transTodaySummarybyType(df)
 
 @app.get('/transactions_cat_summary/')
-def get_transactions_cat_summary(days: int, db: Session=Depends(get_db)):
-    df = get_transactions_df(db, days=days)
+def get_transactions_cat_summary(days: int, type:str, db: Session=Depends(get_db)):
+    df = get_transactions_df(db, days=days, type=type)
     return transTodaySummarybyCat(df)
 
 @app.get('/friends/')
-def get_transactions_with_friends(days: int, db: Session=Depends(get_db)):
+def get_transactions_with_friends(days: int, type:str, db: Session=Depends(get_db)):
     # inp_date = str((date.today() - timedelta(6)).isoformat())
-    trans_today = get_transactions_df(db, days=days)
+    trans_today = get_transactions_df(db, days=days, type=type)
     if (len(trans_today) == 0):
         return ([])
     return((trans_today[trans_today.category == 'Friends'][['amt', 'date', 'payee', 'type', 'category']]).to_dict("records"))
 
 @app.put('/update_category_friends/')
-def put_transactions_with_friends(days: int, cat: List[str], db: Session=Depends(get_db)):
+def put_transactions_with_friends(days: int, type:str, cat: List[str], db: Session=Depends(get_db)):
     # inp_date = str((date.today() - timedelta(6)).isoformat())
-    trans_today = get_transactions_df(db, days=days)
+    trans_today = get_transactions_df(db, days=days, type=type)
     cat_today = trans_today.loc[trans_today.category == 'Friends', 'category']
     trans_today.loc[trans_today.category == 'Friends', 'category'] = ([i+ ' - ' +j for i, j in zip(cat_today, cat)])
     trans_today = trans_today[['date', 'category']]
