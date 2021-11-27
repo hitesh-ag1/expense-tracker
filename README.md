@@ -1,4 +1,4 @@
-#Expense Tracker
+# Expense Tracker
 
 Expense tracker is a server-side application which delivers insights and summaries on your daily expenses. It can be used to compare how your spendings compare with that of your peers and where you can save money.
 
